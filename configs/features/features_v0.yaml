@@ -1,0 +1,12 @@
+input_path: artifacts/data/stooq_daily.parquet
+output_path: artifacts/features/features_v0.parquet
+rolling_windows:
+  returns_window: 63
+  volatility_window: 63
+  downside_window: 63
+  drawdown_window: 252
+pca:
+  n_components: 5
+covariance:
+  window: 63
+subset_size: 10
