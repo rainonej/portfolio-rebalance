@@ -5,7 +5,7 @@ Welcome! This repository is designed to be both a research project and a profess
 ## Design Principles
 
 ### 1) Config-first
-Anything that changes experiment behaviour must be controlled via configuration files under `configs/`. Code must not hardcode experiment parameters. Examples include:
+Anything that changes experiment behavior must be controlled via configuration files under `configs/`. Code must not hardcode experiment parameters. Examples include:
 - Asset universe and subset size (N)
 - Date ranges and frequencies
 - Rolling window lengths for statistics and covariance estimation
@@ -42,7 +42,7 @@ Use Google- or NumPy-style docstrings for public functions.
 If a function has input restrictions that cannot be enforced by the type system or linter, document them explicitly. Then either validate inputs in code or ensure that data flows in the repository satisfy them. For stored data that flows into such functions, add tests under `tests/data_assumptions/`.
 
 ## Testing Philosophy
-This repository uses contract tests and invariant checks rather than unit tests of internal behaviours. Tests live under `tests/`.
+This repository uses contract tests and invariant checks rather than unit tests of internal behaviors. Tests live under `tests/`.
 
 Integration/contract tests (in `tests/integration/`) verify that:
 - Provider output conforms to canonical schema and can be stored/loaded losslessly.

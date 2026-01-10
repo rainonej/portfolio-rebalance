@@ -4,7 +4,7 @@
 Tests in this repository serve to validate contracts between modules and invariant properties of stored data and configurations. They are not intended to verify implementation details or numerical results of algorithms.
 
 ## Why this philosophy?
-The goal is to keep the codebase modular and flexible. Tests should ensure that modules can interact correctly and that assumptions documented in docstrings are satisfied by the data flowing through the system. They should not lock in specific behaviours, allowing researchers to experiment with alternative algorithms and architectures without rewriting tests.
+The goal is to keep the codebase modular and flexible. Tests should ensure that modules can interact correctly and that assumptions documented in docstrings are satisfied by the data flowing through the system. They should not lock in specific behaviors, allowing researchers to experiment with alternative algorithms and architectures without rewriting tests.
 
 ## Test Categories
 

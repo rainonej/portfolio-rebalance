@@ -27,5 +27,5 @@ def test_paper_builds_pdf() -> None:
             f"-auxdir={output_dir}",
             "main.tex",
         ]
-        subprocess.run(command, cwd=paper_dir, check=True)
+        subprocess.run(command, cwd=paper_dir, check=True, capture_output=True, text=True)
         assert (output_dir / "main.pdf").exists(), "PDF output was not generated"
