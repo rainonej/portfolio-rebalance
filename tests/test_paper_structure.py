@@ -1,39 +1,31 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
 
 
-@pytest.mark.parametrize(
-    "relative_path",
-    [
-        "paper/main.tex",
-        "paper/macros.tex",
-        "paper/refs.bib",
-        "paper/sections/01_introduction.tex",
-        "paper/sections/02_related_work.tex",
-        "paper/sections/03_method.tex",
-        "paper/sections/04_experiments.tex",
-        "paper/sections/05_results.tex",
-        "paper/sections/06_conclusion.tex",
-    ],
-)
-def test_paper_files_exist(relative_path: str) -> None:
+@pytest.mark.skipif(shutil.which("latexmk") is None, reason="latexmk not installed")
+def test_paper_builds_pdf() -> None:
     root = Path(__file__).resolve().parents[1]
-    target = root / relative_path
-    assert target.exists(), f"Missing expected paper file: {relative_path}"
+    paper_dir = root / "paper"
+    main_tex = paper_dir / "main.tex"
+    assert main_tex.exists(), "paper/main.tex is required to build the PDF"
 
-
-def test_main_includes_sections() -> None:
-    root = Path(__file__).resolve().parents[1]
-    main_tex = (root / "paper/main.tex").read_text(encoding="utf-8")
-    for section in [
-        "sections/01_introduction",
-        "sections/02_related_work",
-        "sections/03_method",
-        "sections/04_experiments",
-        "sections/05_results",
-        "sections/06_conclusion",
-    ]:
-        assert f"\\input{{{section}}}" in main_tex
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = Path(temp_dir)
+        command = [
+            "latexmk",
+            "-pdf",
+            "-bibtex",
+            "-interaction=nonstopmode",
+            "-halt-on-error",
+            f"-outdir={output_dir}",
+            f"-auxdir={output_dir}",
+            "main.tex",
+        ]
+        subprocess.run(command, cwd=paper_dir, check=True)
+        assert (output_dir / "main.pdf").exists(), "PDF output was not generated"

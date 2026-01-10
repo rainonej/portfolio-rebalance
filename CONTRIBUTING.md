@@ -52,7 +52,7 @@ Integration/contract tests (in `tests/integration/`) verify that:
 
 Dataset assumption tests (in `tests/data_assumptions/`) ensure that repository-stored data and configs satisfy all documented preconditions not enforced by the type system. For example, ensure there are no NaNs in a stored returns dataset or that date indices are strictly increasing.
 
-We do not write tests that assert specific numerical outputs of algorithms or the behaviour of internal functions. Performance evaluation and algorithmic results belong in experiment scripts and the paper, not in tests.
+We do not write tests that assert specific numerical outputs of algorithms or the behaviour of internal functions. Performance evaluation and algorithmic results belong in experiment scripts and the paper, not in tests. Avoid tests that encode internal structure choices (for example, asserting a particular LaTeX file hierarchy) when a higher-level contract (such as a successful LaTeX build) can be tested instead.
 
 ### Parameterized coverage across registries
 When a registry contains multiple implementations that share the same interface (e.g., policies, providers, utilities), prefer parameterized tests to validate each implementation against the same contract. When unit tests are appropriate (boundary/edge behavior is documented and consistent across the registry), parameterize those unit tests across all registered implementations to ensure new entries comply with stated assumptions and restrictions.

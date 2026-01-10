@@ -20,6 +20,10 @@ When a function’s docstring imposes input restrictions that are not statically
 
 These tests automatically guard against silent breakage if a future contributor introduces a dataset that violates documented assumptions.
 
+## Test Design Guidance
+- Prefer tests that validate externally observable behavior (contracts, invariants, or successful end-to-end execution).
+- Avoid tests that encode internal structure choices (for example, asserting a particular LaTeX file hierarchy). For the paper, prefer a compile check rather than checking for specific inputs.
+
 ## Running Tests
 To execute the test suite, run:
 ```bash

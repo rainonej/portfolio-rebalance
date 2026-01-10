@@ -8,7 +8,7 @@ From the `paper/` directory, run the following command to compile the PDF with c
 latexmk -pdf -bibtex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-This will create `main.pdf` in the current directory. Note that the generated PDF is ignored by git; CI will build the PDF on every push and upload it as an artifact.
+This will create `main.pdf` in the current directory. The PDF is not tracked in git; CI will build the PDF on every push and upload it as an artifact.
 
 ## Directory Structure
 - `main.tex` — Top-level LaTeX file that includes section files and the bibliography.
