@@ -36,6 +36,19 @@ All constraints and utilities are pluggable modules (no refactoring required to 
 - `paper/` — LaTeX paper source and bibliography.
 - `tests/` — Contract & invariant tests (not unit tests of internal behavior).
 
+## Repository Structure
+```
+.
+├── .github/             # CI workflows
+├── configs/             # Data/feature/train/eval configuration
+├── paper/               # LaTeX source for the paper
+├── tests/               # Contract/invariant tests
+├── CONTRIBUTING.md      # Engineering and testing guidance
+├── EXTRA_CONTEXT.md     # Roadmap and tickets
+├── pyproject.toml       # Tooling and dependency config
+└── README.md            # Project overview
+```
+
 ## Quickstart
 
 ### 1) Create a virtual environment (Python 3.12) and install

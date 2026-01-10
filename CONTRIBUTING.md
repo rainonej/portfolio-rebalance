@@ -54,6 +54,9 @@ Dataset assumption tests (in `tests/data_assumptions/`) ensure that repository-s
 
 We do not write tests that assert specific numerical outputs of algorithms or the behaviour of internal functions. Performance evaluation and algorithmic results belong in experiment scripts and the paper, not in tests.
 
+### Parameterized coverage across registries
+When a registry contains multiple implementations that share the same interface (e.g., policies, providers, utilities), prefer parameterized tests to validate each implementation against the same contract. When unit tests are appropriate (boundary/edge behavior is documented and consistent across the registry), parameterize those unit tests across all registered implementations to ensure new entries comply with stated assumptions and restrictions.
+
 ## Development Workflow
 - Create a feature or bug-fix branch: `feat/<name>` or `fix/<name>`.
 - Write code adhering to the design principles.
