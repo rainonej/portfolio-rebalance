@@ -1,0 +1,11 @@
+features_path: artifacts/features/features_v0.parquet
+checkpoint: artifacts/checkpoints/finetune_v0/best.pt
+subset:
+  - AAPL
+  - MSFT
+  - AMZN
+metrics:
+  - mean_return
+  - volatility
+  - semivariance
+output_dir: artifacts/reports/eval_finetune

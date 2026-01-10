@@ -1,0 +1,14 @@
+features_path: artifacts/features/features_v0.parquet
+output_dir: artifacts/checkpoints/foundation_v0
+subset_size: 10
+batch_size: 256
+epochs: 50
+learning_rate: 0.0003
+model:
+  name: mlp
+  hidden_sizes: [128, 128]
+  identity_embeddings: false
+utility:
+  name: semivariance
+constraint:
+  name: long_only_simplex

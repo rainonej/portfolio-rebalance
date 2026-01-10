@@ -1,0 +1,36 @@
+[project]
+name = "portfolio-rebalance"
+version = "0.1.0"
+description = "Portfolio foundation model training for context-only pretraining and asset fine-tuning."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Portfolio Foundation Contributors" }]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.6.0",
+  "pyright>=1.1.370",
+  "pytest>=8.2.0",
+  "pytest-xdist>=3.6.0",
+  "pre-commit>=3.7.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
