@@ -1,16 +1,9 @@
 provider: stooq
 frequency: daily
-assets:
-  - AAPL
-  - MSFT
-  - GOOG
-  - AMZN
-  - META
-  - TSLA
-  - NVDA
-  - JPM
-  - JNJ
-  - XOM
+assets_source: configs/data/asset_universe.yaml
 start_date: 2000-01-01
 end_date: 2024-12-31
 output_path: artifacts/data/stooq_daily.parquet
+cache_dir: artifacts/data/cache
+use_cache: true
+force_refresh: false

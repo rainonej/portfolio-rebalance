@@ -6,10 +6,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
 authors = [{ name = "Portfolio Foundation Contributors" }]
+dependencies = [
+  "pandas>=2.2.0",
+  "pyarrow>=17.0.0",
+  "PyYAML>=6.0.0",
+  "requests>=2.32.0",
+]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.optional-dependencies]
 dev = [
@@ -34,3 +46,4 @@ reportMissingTypeStubs = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+pythonpath = ["src"]

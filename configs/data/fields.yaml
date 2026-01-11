@@ -1,0 +1,49 @@
+fields:
+  - variable_name: price_open
+    short_name: Open
+    long_name: Open Price
+    description: Opening price for the trading session.
+    dtype: float
+    shape: scalar
+    providers:
+      stooq: open
+  - variable_name: price_high
+    short_name: High
+    long_name: High Price
+    description: Session high price.
+    dtype: float
+    shape: scalar
+    providers:
+      stooq: high
+  - variable_name: price_low
+    short_name: Low
+    long_name: Low Price
+    description: Session low price.
+    dtype: float
+    shape: scalar
+    providers:
+      stooq: low
+  - variable_name: price_close
+    short_name: Close
+    long_name: Close Price
+    description: Session close price.
+    dtype: float
+    shape: scalar
+    providers:
+      stooq: close
+  - variable_name: price_adj_close
+    short_name: Adj Close
+    long_name: Adjusted Close Price
+    description: Close price adjusted for splits/dividends.
+    dtype: float
+    shape: scalar
+    providers:
+      stooq: adj_close
+  - variable_name: volume
+    short_name: Volume
+    long_name: Trading Volume
+    description: Number of shares traded during the session.
+    dtype: float
+    shape: scalar
+    providers:
+      stooq: volume
