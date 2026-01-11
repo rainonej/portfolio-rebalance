@@ -73,7 +73,23 @@ def validate_price_frame(frame: pd.DataFrame) -> SchemaValidationResult:
         "volume",
     ]
     for col in numeric_cols:
+        # Null checks for numeric columns
         if bool(frame[col].isna().any()):
             errors.append(f"Column {col} contains nulls.")
 
+        # Ensure values are numeric by attempting conversion
+        numeric_series = pd.to_numeric(frame[col], errors="coerce")
+        non_numeric_mask = numeric_series.isna() & frame[col].notna()
+        if bool(non_numeric_mask.any()):
+            errors.append(f"Column {col} contains non-numeric values.")
+
+        # Basic range validation: numeric columns should not be negative
+        negative_mask = numeric_series < 0
+        # Ignore NaNs introduced by coercion when checking ranges
+        if bool(negative_mask.fillna(False).any()):
+            errors.append(f"Column {col} contains negative values, which are invalid.")
+
+    # Check for duplicate (date, symbol) pairs, which can indicate data quality issues
+    if bool(frame.duplicated(subset=["date", "symbol"]).any()):
+        errors.append("Duplicate (date, symbol) pairs detected.")
     return SchemaValidationResult(errors=tuple(errors))
