@@ -9,7 +9,6 @@ from pf.data.providers.stooq import StooqProvider
 
 
 class ProviderRegistry:
-    """Registry for available providers."""
 
     def __init__(self) -> None:
         self._providers: dict[str, DataProvider] = {

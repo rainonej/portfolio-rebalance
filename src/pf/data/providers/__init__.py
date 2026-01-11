@@ -1,1 +1,1 @@
-"""Provider implementations."""
+"""Provider implementations and interfaces."""

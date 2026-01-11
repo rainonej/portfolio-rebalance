@@ -1,5 +1,3 @@
-"""Cache storage for provider data."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

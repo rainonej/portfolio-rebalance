@@ -13,7 +13,6 @@ from pf.data.assets import AssetUniverse, load_asset_universe
 
 @dataclass(frozen=True)
 class DataFetchConfig:
-    """Configuration for provider data fetching."""
 
     provider: str
     frequency: str

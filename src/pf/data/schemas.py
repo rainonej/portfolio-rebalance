@@ -1,5 +1,3 @@
-"""Canonical data schemas for provider outputs."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

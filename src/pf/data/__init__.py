@@ -1,1 +1,1 @@
-"""Data utilities and providers."""
+"""Data utilities and providers for the portfolio foundation pipeline."""

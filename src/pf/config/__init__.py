@@ -1,1 +1,1 @@
-"""Configuration helpers."""
+"""Configuration helpers for config loading/parsing."""
