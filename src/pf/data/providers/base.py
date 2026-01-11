@@ -7,7 +7,6 @@ from typing import Literal, Protocol
 
 import pandas as pd
 
-
 Frequency = Literal["daily"]
 
 
