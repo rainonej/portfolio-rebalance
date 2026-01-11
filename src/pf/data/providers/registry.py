@@ -20,8 +20,7 @@ class ProviderRegistry:
     def get(self, name: str) -> DataProvider:
         if name not in self._providers:
             raise ValueError(
-                f"Unknown provider: {name}. "
-                f"Available providers: {list(self._providers.keys())}"
+                f"Unknown provider: {name}. Available providers: {list(self._providers.keys())}"
             )
         return self._providers[name]
 

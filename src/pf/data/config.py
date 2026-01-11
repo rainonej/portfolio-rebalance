@@ -9,6 +9,8 @@ from pf.config.loader import load_yaml
 from pf.constants import DEFAULT_CACHE_DIR
 from pf.data.assets import AssetUniverse, load_asset_universe
 from pf.data.providers.base import Frequency
+
+
 class DataFetchConfig(BaseModel):
     provider: str
     frequency: Frequency
