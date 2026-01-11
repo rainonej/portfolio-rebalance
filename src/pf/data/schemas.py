@@ -35,7 +35,8 @@ def canonicalize_prices(frame: pd.DataFrame) -> pd.DataFrame:
     """
 
     frame = frame.copy()
-    frame = frame[list(PRICE_COLUMNS)]
+    columns: list[str] = list(PRICE_COLUMNS)
+    frame = frame.loc[:, columns]
     frame["date"] = pd.to_datetime(frame["date"], utc=True)
     frame = frame.sort_values(["symbol", "date"]).reset_index(drop=True)
     return frame
@@ -57,10 +58,10 @@ def validate_price_frame(frame: pd.DataFrame) -> SchemaValidationResult:
         errors.append(f"Missing columns: {missing}")
         return SchemaValidationResult(errors=tuple(errors))
 
-    if frame["symbol"].isna().any():
+    if bool(frame["symbol"].isna().any()):
         errors.append("Symbol column contains nulls.")
 
-    if frame["date"].isna().any():
+    if bool(frame["date"].isna().any()):
         errors.append("Date column contains nulls.")
 
     numeric_cols: Iterable[str] = [
@@ -72,7 +73,7 @@ def validate_price_frame(frame: pd.DataFrame) -> SchemaValidationResult:
         "volume",
     ]
     for col in numeric_cols:
-        if frame[col].isna().any():
+        if bool(frame[col].isna().any()):
             errors.append(f"Column {col} contains nulls.")
 
     return SchemaValidationResult(errors=tuple(errors))

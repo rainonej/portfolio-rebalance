@@ -29,7 +29,8 @@ class StooqProvider:
             frames.append(frame)
 
         if not frames:
-            return pd.DataFrame(columns=list(PRICE_COLUMNS))
+            columns: list[str] = list(PRICE_COLUMNS)
+            return pd.DataFrame(columns=columns)
 
         combined = pd.concat(frames, ignore_index=True)
         return combined
@@ -65,8 +66,8 @@ def _normalize_frame(frame: pd.DataFrame, symbol: str) -> pd.DataFrame:
     frame["adj_close"] = frame["close"]
     for column in ["open", "high", "low", "close", "adj_close", "volume"]:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
-    frame = frame[list(PRICE_COLUMNS)]
-    return frame
+    columns: list[str] = list(PRICE_COLUMNS)
+    return frame.loc[:, columns]
 
 
 def _filter_dates(frame: pd.DataFrame, start_date: str, end_date: str) -> pd.DataFrame:
