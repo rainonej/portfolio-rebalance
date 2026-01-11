@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   python-checks:
@@ -25,11 +25,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Ruff format
-        run: ruff format --check .
+      - name: Ruff lint (auto-fix if needed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ruff check .; then
+            echo "Ruff check passed."
+          else
+            echo "Ruff check failed; attempting auto-fix."
+            ruff check --fix .
+            ruff format .
+            if ! git diff --quiet; then
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add .
+              git commit -m "Apply ruff auto-fixes"
+              git push
+            else
+              echo "No changes after auto-fix."
+            fi
+          fi
 
-      - name: Ruff lint
-        run: ruff check .
+      - name: Ruff format check
+        run: ruff format --check .
 
       - name: Pyright
         run: pyright
