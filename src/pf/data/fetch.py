@@ -41,6 +41,11 @@ def fetch_prices(
         cache_dir: Directory for cached data.
         use_cache: Whether to reuse cached data if available.
         force_refresh: Whether to bypass cache and re-fetch.
+
+    Returns:
+        FetchResult: Result of the fetch operation.
+            frame: A pandas DataFrame with canonicalized and validated price data.
+            from_cache: Whether the returned data was loaded from cache.
     """
 
     provider = provider_registry.get(provider_name)
