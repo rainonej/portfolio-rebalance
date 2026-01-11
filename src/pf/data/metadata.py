@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -39,9 +38,7 @@ class FieldCatalog(BaseModel):
 
     @field_validator("fields")
     @classmethod
-    def ensure_unique_variables(
-        cls, fields: tuple[FieldSpec, ...]
-    ) -> tuple[FieldSpec, ...]:
+    def ensure_unique_variables(cls, fields: tuple[FieldSpec, ...]) -> tuple[FieldSpec, ...]:
         seen = set()
         for field in fields:
             if field.variable_name in seen:

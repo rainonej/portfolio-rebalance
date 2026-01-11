@@ -28,7 +28,6 @@ class SchemaValidationResult:
         return not self.errors
 
 
-
 def canonicalize_prices(frame: pd.DataFrame) -> pd.DataFrame:
     """Return a canonicalized price frame.
 

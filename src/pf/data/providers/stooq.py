@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import StringIO
+
 import pandas as pd
 import requests
 

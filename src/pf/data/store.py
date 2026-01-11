@@ -88,7 +88,5 @@ def load_or_fetch(
 
     frame = fetcher()
     frame.to_parquet(paths.data_path, index=False)
-    paths.metadata_path.write_text(
-        pd.Series(asdict(request)).to_json(), encoding="utf-8"
-    )
+    paths.metadata_path.write_text(pd.Series(asdict(request)).to_json(), encoding="utf-8")
     return CacheResult(frame=frame, from_cache=False)
