@@ -5,7 +5,7 @@ This monorepo contains:
 - A LaTeX paper living in the same repository (code + paper monorepo).
 - A strict engineering philosophy: configuration-driven experiments, typed interfaces, contract-style tests, and centralized constants.
 
-**Latest paper PDF (GitHub Pages):** `https://<your-github-username>.github.io/portfolio-rebalance/paper/main.pdf`
+**Current Paper (PDF):** https://rainonej.github.io/portfolio-rebalance/paper/main.pdf
 
 ## Core Idea
 We train two models:
