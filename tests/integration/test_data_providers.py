@@ -22,13 +22,15 @@ GOLDEN_END = "2010-01-08"
 FREQUENCY = "daily"
 ASSET_WINDOW_START = "2020-01-02"
 ASSET_WINDOW_END = "2020-01-08"
+# Limit number of assets in schema test to keep long integration tests reasonably fast.
+MAX_ASSETS_FOR_SCHEMA_TEST = 2
 
 
 @pytest.mark.long
 @pytest.mark.parametrize("provider_name", provider_registry.names())
 def test_provider_prices_schema(provider_name: str) -> None:
     assets = load_asset_universe(ASSET_CONFIG)
-    symbols = assets.assets[:2]
+    symbols = assets.assets[:MAX_ASSETS_FOR_SCHEMA_TEST]
     result = fetch_prices(
         provider_name,
         symbols=symbols,
