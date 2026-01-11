@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from pf.config.loader import load_yaml
 
 
-@dataclass(frozen=True)
-class FieldSpec:
+class FieldSpec(BaseModel):
     """Definition of a canonical field and provider mappings."""
 
     variable_name: str
@@ -17,14 +17,17 @@ class FieldSpec:
     description: str
     dtype: str
     shape: str
-    providers: dict[str, str]
+    providers: dict[str, str] = Field(default_factory=dict)
+
+    model_config = ConfigDict(frozen=True)
 
 
-@dataclass(frozen=True)
-class FieldCatalog:
+class FieldCatalog(BaseModel):
     """Catalog of canonical fields."""
 
     fields: tuple[FieldSpec, ...]
+
+    model_config = ConfigDict(frozen=True)
 
     def fields_for_provider(self, provider: str) -> dict[str, FieldSpec]:
         mapping: dict[str, FieldSpec] = {}
@@ -34,29 +37,21 @@ class FieldCatalog:
                 mapping[provider_key] = field
         return mapping
 
-
-def _parse_field(raw: dict[str, Any]) -> FieldSpec:
-    return FieldSpec(
-        variable_name=raw["variable_name"],
-        short_name=raw["short_name"],
-        long_name=raw["long_name"],
-        description=raw["description"],
-        dtype=raw["dtype"],
-        shape=raw["shape"],
-        providers=raw.get("providers", {}),
-    )
+    @field_validator("fields")
+    @classmethod
+    def ensure_unique_variables(
+        cls, fields: tuple[FieldSpec, ...]
+    ) -> tuple[FieldSpec, ...]:
+        seen = set()
+        for field in fields:
+            if field.variable_name in seen:
+                raise ValueError(f"Duplicate variable_name: {field.variable_name}")
+            seen.add(field.variable_name)
+        return fields
 
 
 def load_field_catalog(path: str | Path) -> FieldCatalog:
-    """Load a field catalog from YAML.
-
-    Args:
-        path: Path to the field catalog configuration.
-
-    Returns:
-        FieldCatalog instance.
-    """
+    """Load a field catalog from YAML."""
 
     data = load_yaml(path)
-    fields = tuple(_parse_field(raw) for raw in data.get("fields", []))
-    return FieldCatalog(fields=fields)
+    return FieldCatalog.model_validate(data)

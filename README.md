@@ -43,12 +43,25 @@ All constraints and utilities are pluggable modules (no refactoring required to 
 .
 ├── .github/             # CI workflows
 ├── configs/             # Data/feature/train/eval configuration
+├── src/                 # Python package source (pf)
 ├── paper/               # LaTeX source for the paper
 ├── tests/               # Contract/invariant tests
 ├── CONTRIBUTING.md      # Engineering and testing guidance
 ├── EXTRA_CONTEXT.md     # Roadmap and tickets
 ├── pyproject.toml       # Tooling and dependency config
 └── README.md            # Project overview
+```
+
+## Source Layout (`src/pf/`)
+```
+src/pf/
+├── config/              # Config loaders and schemas
+├── constants.py         # Centralized constants/paths
+├── data/                # Providers, schemas, and caching
+│   ├── providers/       # Provider implementations + registry
+│   ├── schemas.py       # Canonical data schema validation
+│   └── store.py         # Parquet/cache helpers
+└── __init__.py
 ```
 
 ## Quickstart

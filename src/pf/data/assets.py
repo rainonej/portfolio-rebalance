@@ -1,17 +1,24 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
+
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from pf.config.loader import load_yaml
 
 
-@dataclass(frozen=True)
-class AssetUniverse:
+class AssetUniverse(BaseModel):
     """Configured universe of asset tickers."""
 
     assets: tuple[str, ...]
 
+    model_config = ConfigDict(frozen=True)
+
+    @field_validator("assets")
+    @classmethod
+    def normalize_assets(cls, assets: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = {asset.strip().upper() for asset in assets}
+        return tuple(sorted(normalized))
 
 
 def load_asset_universe(path: str | Path) -> AssetUniverse:
@@ -25,5 +32,5 @@ def load_asset_universe(path: str | Path) -> AssetUniverse:
     """
 
     data = load_yaml(path)
-    assets = sorted({asset.strip().upper() for asset in data.get("assets", [])})
-    return AssetUniverse(assets=tuple(assets))
+    assets = tuple(data.get("assets", []))
+    return AssetUniverse.model_validate({"assets": assets})

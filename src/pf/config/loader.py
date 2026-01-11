@@ -19,4 +19,5 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
     """
 
     data = Path(path).read_text(encoding="utf-8")
-    return yaml.safe_load(data)
+    loaded = yaml.safe_load(data)
+    return loaded or {}

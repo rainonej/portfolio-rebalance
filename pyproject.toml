@@ -8,6 +8,7 @@ license = { file = "LICENSE" }
 authors = [{ name = "Portfolio Foundation Contributors" }]
 dependencies = [
   "pandas>=2.2.0",
+  "pydantic>=2.7.0",
   "pyarrow>=17.0.0",
   "PyYAML>=6.0.0",
   "requests>=2.32.0",

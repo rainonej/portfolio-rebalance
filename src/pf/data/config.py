@@ -1,28 +1,27 @@
-"""Data configuration loading."""
-
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from pf.config.loader import load_yaml
 from pf.constants import DEFAULT_CACHE_DIR
 from pf.data.assets import AssetUniverse, load_asset_universe
 
 
-@dataclass(frozen=True)
-class DataFetchConfig:
-
+class DataFetchConfig(BaseModel):
     provider: str
     frequency: str
     assets: AssetUniverse
     start_date: str
     end_date: str
     output_path: Path
-    cache_dir: Path
-    use_cache: bool
-    force_refresh: bool
+    cache_dir: Path = Field(default_factory=lambda: DEFAULT_CACHE_DIR)
+    use_cache: bool = True
+    force_refresh: bool = False
+
+    model_config = ConfigDict(frozen=True)
 
 
 def _resolve_assets(raw: dict[str, Any]) -> AssetUniverse:
@@ -30,7 +29,7 @@ def _resolve_assets(raw: dict[str, Any]) -> AssetUniverse:
     if assets_source:
         return load_asset_universe(assets_source)
     assets = raw.get("assets", [])
-    return AssetUniverse(assets=tuple(sorted({asset.upper() for asset in assets})))
+    return AssetUniverse.model_validate({"assets": tuple(assets)})
 
 
 def load_data_fetch_config(path: str | Path) -> DataFetchConfig:
@@ -38,15 +37,10 @@ def load_data_fetch_config(path: str | Path) -> DataFetchConfig:
 
     raw = load_yaml(path)
     assets = _resolve_assets(raw)
-    cache_dir = Path(raw.get("cache_dir", DEFAULT_CACHE_DIR))
-    return DataFetchConfig(
-        provider=raw["provider"],
-        frequency=raw["frequency"],
-        assets=assets,
-        start_date=raw["start_date"],
-        end_date=raw["end_date"],
-        output_path=Path(raw["output_path"]),
-        cache_dir=cache_dir,
-        use_cache=raw.get("use_cache", True),
-        force_refresh=raw.get("force_refresh", False),
-    )
+    resolved = {
+        **raw,
+        "assets": assets,
+        "output_path": Path(raw["output_path"]),
+        "cache_dir": Path(raw.get("cache_dir", DEFAULT_CACHE_DIR)),
+    }
+    return DataFetchConfig.model_validate(resolved)
