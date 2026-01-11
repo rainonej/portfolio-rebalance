@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from pf.config.loader import load_yaml
 from pf.constants import DEFAULT_CACHE_DIR
 from pf.data.assets import AssetUniverse, load_asset_universe
-
-Frequency = Literal["daily"]
-
-
+from pf.data.providers.base import Frequency
 class DataFetchConfig(BaseModel):
     provider: str
     frequency: Frequency
