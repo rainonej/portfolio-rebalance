@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
 
 permissions:
@@ -54,6 +54,20 @@ jobs:
         run: |
           mkdir -p site/paper
           cp paper/main.pdf site/paper/main.pdf
+          cat > site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Portfolio Foundation</title>
+            <meta http-equiv="refresh" content="0; url=paper/main.pdf">
+            <link rel="canonical" href="paper/main.pdf">
+          </head>
+          <body>
+            <p>Redirecting to <a href="paper/main.pdf">paper/main.pdf</a>...</p>
+          </body>
+          </html>
+          EOF
 
       - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
