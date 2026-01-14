@@ -26,7 +26,7 @@ fields:
   - variable_name: price_close
     short_name: Close
     long_name: Close Price
-    description: Session close price.
+    description: Session close price. Note: For assets considered, no dividends are present, so close and adj_close are equivalent.
     dtype: float
     shape: scalar
     providers:
@@ -34,7 +34,7 @@ fields:
   - variable_name: price_adj_close
     short_name: Adj Close
     long_name: Adjusted Close Price
-    description: Close price adjusted for splits/dividends.
+    description: Close price adjusted for splits/dividends. Currently set equal to close as none of the considered assets have dividends.
     dtype: float
     shape: scalar
     providers:

@@ -42,5 +42,8 @@ def load_data_fetch_config(path: str | Path) -> DataFetchConfig:
         "assets": assets,
         "output_path": Path(raw["output_path"]),
         "cache_dir": Path(raw.get("cache_dir", DEFAULT_CACHE_DIR)),
+        # Convert dates to strings if they were parsed as date objects
+        "start_date": str(raw["start_date"]),
+        "end_date": str(raw["end_date"]),
     }
     return DataFetchConfig.model_validate(resolved)

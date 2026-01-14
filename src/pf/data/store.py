@@ -87,9 +87,11 @@ def load_or_fetch(
         return CacheResult(frame=frame, from_cache=True)
 
     frame = fetcher()
-    frame.to_parquet(paths.data_path, index=False)
-    metadata_json = pd.Series(asdict(request)).to_json()
-    if metadata_json is None:
-        raise ValueError("Failed to serialize cache metadata.")
-    paths.metadata_path.write_text(metadata_json, encoding="utf-8")
+    # Only write to cache if caching is enabled
+    if use_cache:
+        frame.to_parquet(paths.data_path, index=False)
+        metadata_json = pd.Series(asdict(request)).to_json()
+        if metadata_json is None:
+            raise ValueError("Failed to serialize cache metadata.")
+        paths.metadata_path.write_text(metadata_json, encoding="utf-8")
     return CacheResult(frame=frame, from_cache=False)

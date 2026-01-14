@@ -156,6 +156,13 @@ venv.bak/
 
 # Artifacts
 artifacts/
+# But track main data files (they're large, use Git LFS)
+# Un-ignore the data directory and parquet files within it
+!artifacts/data/
+!artifacts/data/**/*.parquet
+!artifacts/data/*.parquet
+# Ignore cache files
+artifacts/data/cache/
 
 # LaTeX auxiliary files
 *.aux

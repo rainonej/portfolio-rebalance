@@ -27,7 +27,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Ruff format
-        run: ruff format --check .
+        run: ruff format --check . || (echo "::error::Formatting check failed. Run 'ruff format .' locally to fix." && exit 1)
 
       - name: Ruff lint
         run: ruff check .
@@ -130,3 +130,19 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # PR Review Agent - Currently disabled
+  # To enable: uncomment the job below and ensure OPENAI_API_KEY secret is configured
+  # The agent analyzes CI failures using AI and posts helpful comments to PRs
+  # See .github/workflows/pr-review-agent.yml for the full implementation
+  #
+  # pr-review-agent:
+  #   if: always() && github.event_name == 'pull_request' && (needs.python-checks.result == 'failure' || needs.paper-build.result == 'failure')
+  #   needs: [python-checks, paper-build]
+  #   uses: ./.github/workflows/pr-review-agent.yml
+  #   with:
+  #     python_checks_result: ${{ needs.python-checks.result }}
+  #     paper_build_result: ${{ needs.paper-build.result }}
+  #     workflow_run_id: ${{ github.run_id }}
+  #     pr_number: ${{ github.event.pull_request.number }}
+  #   secrets: inherit
