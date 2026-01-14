@@ -30,7 +30,7 @@ class StooqProvider:
 
         if not frames:
             columns: list[str] = list(PRICE_COLUMNS)
-            return pd.DataFrame(columns=columns)
+            return pd.DataFrame({col: [] for col in columns})
 
         combined = pd.concat(frames, ignore_index=True)
         return combined
