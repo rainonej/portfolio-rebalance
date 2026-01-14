@@ -132,7 +132,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   pr-review-agent:
-    if: github.event_name == 'pull_request' && (needs.python-checks.result == 'failure' || needs.paper-build.result == 'failure')
+    if: always() && github.event_name == 'pull_request' && (needs.python-checks.result == 'failure' || needs.paper-build.result == 'failure')
     needs: [python-checks, paper-build]
     runs-on: ubuntu-latest
     permissions:
