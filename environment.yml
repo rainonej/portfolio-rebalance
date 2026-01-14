@@ -1,0 +1,8 @@
+name: portfolio-rebalance
+channels:
+  - defaults
+dependencies:
+  - python=3.12  # Must match requires-python in pyproject.toml
+  - pip
+  - pip:
+    - -e ".[dev]"
