@@ -1,4 +1,4 @@
-name: Provider Contract Tests
+name: Provider Contract Tests-2
 
 on:
   workflow_dispatch:
