@@ -13,9 +13,7 @@ from pf.data.fetch import fetch_prices
 
 def main() -> None:
     """Fetch bulk data using configuration file."""
-    parser = argparse.ArgumentParser(
-        description="Fetch bulk market data with caching support"
-    )
+    parser = argparse.ArgumentParser(description="Fetch bulk market data with caching support")
     parser.add_argument(
         "config",
         type=str,
@@ -85,11 +83,17 @@ def main() -> None:
     print("SUMMARY STATISTICS")
     print("=" * 60)
 
-    summary = result.frame.groupby("symbol").agg({
-        "date": ["min", "max", "count"],
-        "close": ["min", "max", "mean"],
-        "volume": ["mean"],
-    }).round(2)
+    summary = (
+        result.frame.groupby("symbol")
+        .agg(
+            {
+                "date": ["min", "max", "count"],
+                "close": ["min", "max", "mean"],
+                "volume": ["mean"],
+            }
+        )
+        .round(2)
+    )
 
     print("\nPer-symbol statistics (first 10):")
     print(summary.head(10).to_string())
