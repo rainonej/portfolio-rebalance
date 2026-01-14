@@ -157,6 +157,9 @@ venv.bak/
 # Artifacts
 artifacts/
 # But track main data files (they're large, use Git LFS)
+# Need to un-ignore parent directories first
+!artifacts/data/
+!artifacts/data/
 !artifacts/data/*.parquet
 # Ignore cache files
 artifacts/data/cache/
