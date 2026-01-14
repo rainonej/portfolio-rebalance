@@ -19,6 +19,9 @@ GOLDEN_PATH = Path("tests/data/golden/stooq_aapl_2010_01_04_2010_01_08.csv")
 GOLDEN_SYMBOL = "AAPL"
 GOLDEN_START = "2010-01-04"
 GOLDEN_END = "2010-01-08"
+# Date range where all assets in asset_universe.yaml exist (all assets IPO'd by 2015)
+ASSETS_TEST_START = "2015-01-05"
+ASSETS_TEST_END = "2015-01-09"
 
 
 @pytest.mark.long
@@ -57,14 +60,17 @@ def test_provider_fields_exist(provider_name: str) -> None:
 @pytest.mark.long
 @pytest.mark.parametrize("provider_name", provider_registry.names())
 def test_provider_assets_exist(provider_name: str) -> None:
+    """Test that provider can fetch data for all assets in the universe."""
     assets = load_asset_universe(ASSET_CONFIG)
     result = fetch_prices(
         provider_name,
         symbols=assets.assets,
-        start_date=GOLDEN_START,
-        end_date=GOLDEN_END,
+        start_date=ASSETS_TEST_START,
+        end_date=ASSETS_TEST_END,
         frequency="daily",
     )
+    validation = validate_price_frame(result.frame)
+    assert validation.is_valid, f"Schema errors: {validation.errors}"
     symbols_found = set(result.frame["symbol"].unique())
     assert set(assets.assets).issubset(symbols_found)
 

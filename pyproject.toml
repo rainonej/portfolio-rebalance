@@ -46,5 +46,5 @@ reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-vra --color=yes"
 pythonpath = ["src"]

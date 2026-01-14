@@ -157,6 +157,23 @@ venv.bak/
 # Artifacts
 artifacts/
 
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+
 # mypy
 .mypy_cache/
 .dmypy.json
