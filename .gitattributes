@@ -4,7 +4,7 @@
 
 # Track large CSV files, but exclude small test golden files
 *.csv filter=lfs diff=lfs merge=lfs -text
-tests/data/golden/*.csv -filter -diff -merge
+tests/data/golden/*.csv -filter -diff -merge text
 
 # Don't track cache files (they're in .gitignore anyway)
 artifacts/data/cache/** -filter -diff -merge
