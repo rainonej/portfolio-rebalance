@@ -130,3 +130,117 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  pr-review-agent:
+    if: github.event_name == 'pull_request' && (needs.python-checks.result == 'failure' || needs.paper-build.result == 'failure')
+    needs: [python-checks, paper-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Analyze failure and post comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get PR number
+            const prNumber = context.payload.pull_request?.number || context.payload.number;
+            if (!prNumber) {
+              console.log('Not a PR event, skipping review');
+              return;
+            }
+
+            // Get failed jobs
+            const failedJobs = [];
+            if ('${{ needs.python-checks.result }}' === 'failure') {
+              failedJobs.push('python-checks');
+            }
+            if ('${{ needs.paper-build.result }}' === 'failure') {
+              failedJobs.push('paper-build');
+            }
+
+            if (failedJobs.length === 0) {
+              console.log('No failed jobs to analyze');
+              return;
+            }
+
+            // Get workflow run details
+            const workflowRunId = context.runId;
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: workflowRunId,
+            });
+
+            let failedJob = null;
+            let failedStep = null;
+
+            // Find first failed job and step
+            for (const job of jobs.jobs || []) {
+              if (job.conclusion === 'failure' && failedJobs.includes(job.name)) {
+                failedJob = job;
+                const { data: steps } = await github.rest.actions.listJobsForWorkflowRunAttempt({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: workflowRunId,
+                  attempt_number: job.run_attempt || 1,
+                });
+
+                for (const step of steps.steps || []) {
+                  if (step.conclusion === 'failure') {
+                    failedStep = step;
+                    break;
+                  }
+                }
+                break;
+              }
+            }
+
+            if (!failedJob || !failedStep) {
+              console.log('Could not identify failed job/step');
+              return;
+            }
+
+            // Build analysis
+            let analysis = `## 🔍 CI Failure Analysis\n\n`;
+            analysis += `**Failed Job:** \`${failedJob.name}\`\n`;
+            analysis += `**Failed Step:** \`${failedStep.name}\`\n\n`;
+
+            // Pattern matching for common issues
+            let hypothesis = '';
+            let proposedFix = '';
+
+            const stepName = failedStep.name || '';
+
+            if (stepName.includes('Ruff format')) {
+              hypothesis = '**Hypothesis:** Code formatting does not match Ruff\'s expected format. This usually happens when code is edited without running `ruff format` before committing.';
+              proposedFix = `**Proposed Fix:**\n\`\`\`bash\nruff format .\n\`\`\`\n\nThen commit the formatted files:\n\`\`\`bash\ngit add .\ngit commit --amend --no-edit\n\`\`\``;
+            } else if (stepName.includes('Ruff lint')) {
+              hypothesis = '**Hypothesis:** Code has linting errors (style, import order, or code quality issues).';
+              proposedFix = `**Proposed Fix:**\n\`\`\`bash\nruff check --fix .\n\`\`\`\n\nReview and commit the fixes.`;
+            } else if (stepName.includes('Pyright')) {
+              hypothesis = '**Hypothesis:** Type checking errors detected. This could be missing type hints, incorrect types, or type mismatches.';
+              proposedFix = `**Proposed Fix:**\n1. Review the Pyright output for specific type errors\n2. Add missing type hints\n3. Fix type mismatches\n4. Run \`pyright\` locally to verify`;
+            } else if (stepName.includes('Pytest')) {
+              hypothesis = '**Hypothesis:** Tests are failing. This could be due to broken functionality, changed interfaces, or test environment issues.';
+              proposedFix = `**Proposed Fix:**\n1. Run tests locally: \`pytest\`\n2. Review test failures\n3. Fix the underlying issues\n4. Ensure all tests pass before pushing`;
+            } else {
+              hypothesis = '**Hypothesis:** Unknown failure. Review the logs below for details.';
+              proposedFix = `**Proposed Fix:**\n1. Review the full workflow logs\n2. Reproduce the issue locally\n3. Fix the underlying problem`;
+            }
+
+            analysis += hypothesis + '\n\n';
+            analysis += proposedFix + '\n\n';
+            analysis += `### 📋 Full Logs\n\n`;
+            analysis += `View the complete logs in the [workflow run](${context.payload.repository.html_url}/actions/runs/${workflowRunId}).\n`;
+
+            // Post comment to PR
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: analysis,
+            });
+
+            console.log(`Posted failure analysis to PR #${prNumber}`);
