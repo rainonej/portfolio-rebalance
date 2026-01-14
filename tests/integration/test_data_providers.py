@@ -19,6 +19,9 @@ GOLDEN_PATH = Path("tests/data/golden/stooq_aapl_2010_01_04_2010_01_08.csv")
 GOLDEN_SYMBOL = "AAPL"
 GOLDEN_START = "2010-01-04"
 GOLDEN_END = "2010-01-08"
+# Date range where all assets in asset_universe.yaml exist (all assets IPO'd by 2015)
+ASSETS_TEST_START = "2015-01-05"
+ASSETS_TEST_END = "2015-01-09"
 
 
 @pytest.mark.long
@@ -57,28 +60,19 @@ def test_provider_fields_exist(provider_name: str) -> None:
 @pytest.mark.long
 @pytest.mark.parametrize("provider_name", provider_registry.names())
 def test_provider_assets_exist(provider_name: str) -> None:
-    """Test that provider can fetch data for assets without error.
-
-    Note: Some assets may not have data for the test date range (e.g., TSLA IPO'd
-    in June 2010, META in May 2012), so we only verify that the request succeeds
-    and returns valid data for symbols that exist in that period.
-    """
+    """Test that provider can fetch data for all assets in the universe."""
     assets = load_asset_universe(ASSET_CONFIG)
     result = fetch_prices(
         provider_name,
         symbols=assets.assets,
-        start_date=GOLDEN_START,
-        end_date=GOLDEN_END,
+        start_date=ASSETS_TEST_START,
+        end_date=ASSETS_TEST_END,
         frequency="daily",
     )
-    # Verify the request succeeded and returned valid schema
     validation = validate_price_frame(result.frame)
     assert validation.is_valid, f"Schema errors: {validation.errors}"
-    # Verify that at least some symbols were found (not all may exist for this date range)
     symbols_found = set(result.frame["symbol"].unique())
-    assert len(symbols_found) > 0, "No symbols found in result"
-    # Verify that all found symbols were requested
-    assert symbols_found.issubset(set(assets.assets)), f"Found unexpected symbols: {symbols_found - set(assets.assets)}"
+    assert set(assets.assets).issubset(symbols_found)
 
 
 @pytest.mark.long
