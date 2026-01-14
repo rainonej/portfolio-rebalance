@@ -1,0 +1,269 @@
+name: PR Review Agent
+
+# Reusable workflow for analyzing CI failures with AI
+# This workflow can be called from other workflows using workflow_call
+# Currently disabled - uncomment the call in ci.yml to enable
+
+on:
+  workflow_call:
+    inputs:
+      python_checks_result:
+        required: true
+        type: string
+      paper_build_result:
+        required: true
+        type: string
+      workflow_run_id:
+        required: true
+        type: string
+      pr_number:
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  analyze-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Analyze failure with AI and post comment
+        uses: actions/github-script@v7
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          script: |
+            const prNumber = ${{ inputs.pr_number }};
+            const workflowRunId = ${{ inputs.workflow_run_id }};
+
+            // Get failed jobs
+            const failedJobs = [];
+            if ('${{ inputs.python_checks_result }}' === 'failure') {
+              failedJobs.push('python-checks');
+            }
+            if ('${{ inputs.paper_build_result }}' === 'failure') {
+              failedJobs.push('paper-build');
+            }
+
+            if (failedJobs.length === 0) {
+              console.log('No failed jobs to analyze');
+              return;
+            }
+
+            // Get workflow run details
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: parseInt(workflowRunId),
+            });
+
+            let failedJob = null;
+            let failedStep = null;
+
+            // Find first failed job and step
+            for (const job of jobs.jobs || []) {
+              // Match job by name (case-insensitive, handle job name variations)
+              const jobNameMatch = failedJobs.some(fj => 
+                job.name.toLowerCase().includes(fj.toLowerCase()) || 
+                fj.toLowerCase().includes(job.name.toLowerCase())
+              );
+              
+              if (job.conclusion === 'failure' && jobNameMatch) {
+                failedJob = job;
+                console.log(`Found failed job: ${job.name} (ID: ${job.id})`);
+                
+                try {
+                  const { data: steps } = await github.rest.actions.listJobsForWorkflowRunAttempt({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: parseInt(workflowRunId),
+                    attempt_number: job.run_attempt || 1,
+                  });
+
+                  // Find failed step - check for 'failure' or 'cancelled' conclusion
+                  for (const step of steps.steps || []) {
+                    if (step.conclusion === 'failure' || step.conclusion === 'cancelled') {
+                      failedStep = step;
+                      console.log(`Found failed step: ${step.name}`);
+                      break;
+                    }
+                  }
+                  
+                  // If no step marked as failed, use the last step that ran
+                  if (!failedStep && steps.steps && steps.steps.length > 0) {
+                    // Find the last step that completed (not skipped)
+                    for (let i = steps.steps.length - 1; i >= 0; i--) {
+                      const step = steps.steps[i];
+                      if (step.conclusion && step.conclusion !== 'skipped') {
+                        failedStep = step;
+                        console.log(`Using last completed step: ${step.name} (${step.conclusion})`);
+                        break;
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.log(`Error fetching steps for job ${job.name}: ${error.message}`);
+                }
+                break;
+              }
+            }
+
+            // If we found a failed job but no step, still provide analysis
+            if (!failedJob) {
+              console.log('Could not identify failed job');
+              console.log(`Available jobs: ${(jobs.jobs || []).map(j => `${j.name}(${j.conclusion})`).join(', ')}`);
+              console.log(`Looking for: ${failedJobs.join(', ')}`);
+              return;
+            }
+            
+            if (!failedStep) {
+              console.log('Could not identify failed step, but will analyze based on job name');
+              // Create a synthetic step based on the job name
+              failedStep = { name: failedJob.name };
+            }
+
+            // Fetch log content for AI analysis
+            let logContent = '';
+            try {
+              // Get log download URL from GitHub API
+              const logUrlResponse = await github.rest.actions.getWorkflowRunAttemptLogs({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: parseInt(workflowRunId),
+                attempt_number: failedJob.run_attempt || 1,
+              });
+              
+              // The API returns a URL string, fetch the actual logs
+              if (logUrlResponse.data && typeof logUrlResponse.data === 'string') {
+                const logUrl = logUrlResponse.data;
+                const logDownload = await fetch(logUrl, {
+                  headers: {
+                    'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3.raw',
+                  },
+                });
+                
+                if (logDownload.ok) {
+                  const fullLogs = await logDownload.text();
+                  // Extract the last 4000 chars (most recent errors)
+                  logContent = fullLogs.length > 4000 ? fullLogs.slice(-4000) : fullLogs;
+                  console.log(`Fetched ${logContent.length} characters of log content`);
+                } else {
+                  console.log(`Failed to download logs: ${logDownload.status}`);
+                }
+              }
+            } catch (error) {
+              console.log(`Could not fetch logs: ${error.message}`);
+            }
+
+            // Use AI to analyze the failure
+            let aiAnalysis = '';
+            const openaiKey = process.env.OPENAI_API_KEY;
+            
+            if (openaiKey && logContent) {
+              try {
+                console.log('Calling OpenAI API for AI analysis...');
+                const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${openaiKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                      {
+                        role: 'system',
+                        content: 'You are a helpful CI/CD failure analysis assistant. Analyze CI failure logs and provide clear, actionable feedback. Be concise but thorough.'
+                      },
+                      {
+                        role: 'user',
+                        content: `Analyze this CI failure and provide:
+1. A clear hypothesis about what went wrong
+2. Specific steps to fix the issue
+3. Any relevant context from the error logs
+
+Failed Job: ${failedJob.name}
+Failed Step: ${failedStep.name || 'Unknown'}
+
+Error Logs:
+\`\`\`
+${logContent}
+\`\`\`
+
+Provide your analysis in markdown format with sections for Hypothesis and Proposed Fix.`
+                      }
+                    ],
+                    max_tokens: 1000,
+                    temperature: 0.3,
+                  }),
+                });
+
+                if (openaiResponse.ok) {
+                  const openaiData = await openaiResponse.json();
+                  aiAnalysis = openaiData.choices?.[0]?.message?.content || '';
+                  console.log('Received AI analysis');
+                } else {
+                  const errorText = await openaiResponse.text();
+                  console.log(`OpenAI API error: ${openaiResponse.status} - ${errorText}`);
+                }
+              } catch (error) {
+                console.log(`Error calling OpenAI API: ${error.message}`);
+              }
+            } else {
+              console.log('OpenAI API key not configured or no log content available');
+            }
+
+            // Build analysis - use AI if available, otherwise fallback to pattern matching
+            let analysis = `## 🔍 CI Failure Analysis\n\n`;
+            analysis += `**Failed Job:** \`${failedJob.name}\`\n`;
+            if (failedStep.name && failedStep.name !== failedJob.name) {
+              analysis += `**Failed Step:** \`${failedStep.name}\`\n\n`;
+            } else {
+              analysis += `\n`;
+            }
+
+            if (aiAnalysis) {
+              // Use AI-generated analysis
+              analysis += aiAnalysis + '\n\n';
+            } else {
+              // Fallback to pattern matching
+              let hypothesis = '';
+              let proposedFix = '';
+              const stepName = (failedStep.name || failedJob.name || '').toLowerCase();
+
+              if (stepName.includes('ruff format') || stepName.includes('format')) {
+                hypothesis = '**Hypothesis:** Code formatting does not match Ruff\'s expected format. This usually happens when code is edited without running `ruff format` before committing.';
+                proposedFix = `**Proposed Fix:**\n\`\`\`bash\nruff format .\n\`\`\`\n\nThen commit the formatted files:\n\`\`\`bash\ngit add .\ngit commit --amend --no-edit\n\`\`\``;
+              } else if (stepName.includes('ruff lint') || stepName.includes('lint')) {
+                hypothesis = '**Hypothesis:** Code has linting errors (style, import order, or code quality issues).';
+                proposedFix = `**Proposed Fix:**\n\`\`\`bash\nruff check --fix .\n\`\`\`\n\nReview and commit the fixes.`;
+              } else if (stepName.includes('pyright')) {
+                hypothesis = '**Hypothesis:** Type checking errors detected. This could be missing type hints, incorrect types, or type mismatches.';
+                proposedFix = `**Proposed Fix:**\n1. Review the Pyright output for specific type errors\n2. Add missing type hints\n3. Fix type mismatches\n4. Run \`pyright\` locally to verify`;
+              } else if (stepName.includes('pytest')) {
+                hypothesis = '**Hypothesis:** Tests are failing. This could be due to broken functionality, changed interfaces, or test environment issues.';
+                proposedFix = `**Proposed Fix:**\n1. Run tests locally: \`pytest\`\n2. Review test failures\n3. Fix the underlying issues\n4. Ensure all tests pass before pushing`;
+              } else {
+                hypothesis = '**Hypothesis:** Unknown failure. Review the logs below for details.';
+                proposedFix = `**Proposed Fix:**\n1. Review the full workflow logs\n2. Reproduce the issue locally\n3. Fix the underlying problem`;
+              }
+
+              analysis += hypothesis + '\n\n';
+              analysis += proposedFix + '\n\n';
+            }
+
+            analysis += `### 📋 Full Logs\n\n`;
+            analysis += `View the complete logs in the [workflow run](${context.payload.repository.html_url}/actions/runs/${workflowRunId}).\n`;
+
+            // Post comment to PR
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: analysis,
+            });
+
+            console.log(`Posted failure analysis to PR #${prNumber}`);

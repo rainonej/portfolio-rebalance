@@ -131,157 +131,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-  pr-review-agent:
-    if: always() && github.event_name == 'pull_request' && (needs.python-checks.result == 'failure' || needs.paper-build.result == 'failure')
-    needs: [python-checks, paper-build]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      actions: read
-    steps:
-      - name: Analyze failure and post comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Get PR number
-            const prNumber = context.payload.pull_request?.number || context.payload.number;
-            if (!prNumber) {
-              console.log('Not a PR event, skipping review');
-              return;
-            }
-
-            // Get failed jobs
-            const failedJobs = [];
-            if ('${{ needs.python-checks.result }}' === 'failure') {
-              failedJobs.push('python-checks');
-            }
-            if ('${{ needs.paper-build.result }}' === 'failure') {
-              failedJobs.push('paper-build');
-            }
-
-            if (failedJobs.length === 0) {
-              console.log('No failed jobs to analyze');
-              return;
-            }
-
-            // Get workflow run details
-            const workflowRunId = context.runId;
-            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: workflowRunId,
-            });
-
-            let failedJob = null;
-            let failedStep = null;
-
-            // Find first failed job and step
-            for (const job of jobs.jobs || []) {
-              // Match job by name (case-insensitive, handle job name variations)
-              const jobNameMatch = failedJobs.some(fj => 
-                job.name.toLowerCase().includes(fj.toLowerCase()) || 
-                fj.toLowerCase().includes(job.name.toLowerCase())
-              );
-              
-              if (job.conclusion === 'failure' && jobNameMatch) {
-                failedJob = job;
-                console.log(`Found failed job: ${job.name} (ID: ${job.id})`);
-                
-                try {
-                  const { data: steps } = await github.rest.actions.listJobsForWorkflowRunAttempt({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    run_id: workflowRunId,
-                    attempt_number: job.run_attempt || 1,
-                  });
-
-                  // Find failed step - check for 'failure' or 'cancelled' conclusion
-                  for (const step of steps.steps || []) {
-                    if (step.conclusion === 'failure' || step.conclusion === 'cancelled') {
-                      failedStep = step;
-                      console.log(`Found failed step: ${step.name}`);
-                      break;
-                    }
-                  }
-                  
-                  // If no step marked as failed, use the last step that ran
-                  if (!failedStep && steps.steps && steps.steps.length > 0) {
-                    // Find the last step that completed (not skipped)
-                    for (let i = steps.steps.length - 1; i >= 0; i--) {
-                      const step = steps.steps[i];
-                      if (step.conclusion && step.conclusion !== 'skipped') {
-                        failedStep = step;
-                        console.log(`Using last completed step: ${step.name} (${step.conclusion})`);
-                        break;
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.log(`Error fetching steps for job ${job.name}: ${error.message}`);
-                }
-                break;
-              }
-            }
-
-            // If we found a failed job but no step, still provide analysis
-            if (!failedJob) {
-              console.log('Could not identify failed job');
-              console.log(`Available jobs: ${(jobs.jobs || []).map(j => `${j.name}(${j.conclusion})`).join(', ')}`);
-              console.log(`Looking for: ${failedJobs.join(', ')}`);
-              return;
-            }
-            
-            if (!failedStep) {
-              console.log('Could not identify failed step, but will analyze based on job name');
-              // Create a synthetic step based on the job name
-              failedStep = { name: failedJob.name };
-            }
-
-            // Build analysis
-            let analysis = `## 🔍 CI Failure Analysis\n\n`;
-            analysis += `**Failed Job:** \`${failedJob.name}\`\n`;
-            if (failedStep.name && failedStep.name !== failedJob.name) {
-              analysis += `**Failed Step:** \`${failedStep.name}\`\n\n`;
-            } else {
-              analysis += `\n`;
-            }
-
-            // Pattern matching for common issues
-            let hypothesis = '';
-            let proposedFix = '';
-
-            // Use step name if available, otherwise use job name for pattern matching
-            const stepName = (failedStep.name || failedJob.name || '').toLowerCase();
-
-            if (stepName.includes('Ruff format')) {
-              hypothesis = '**Hypothesis:** Code formatting does not match Ruff\'s expected format. This usually happens when code is edited without running `ruff format` before committing.';
-              proposedFix = `**Proposed Fix:**\n\`\`\`bash\nruff format .\n\`\`\`\n\nThen commit the formatted files:\n\`\`\`bash\ngit add .\ngit commit --amend --no-edit\n\`\`\``;
-            } else if (stepName.includes('Ruff lint')) {
-              hypothesis = '**Hypothesis:** Code has linting errors (style, import order, or code quality issues).';
-              proposedFix = `**Proposed Fix:**\n\`\`\`bash\nruff check --fix .\n\`\`\`\n\nReview and commit the fixes.`;
-            } else if (stepName.includes('Pyright')) {
-              hypothesis = '**Hypothesis:** Type checking errors detected. This could be missing type hints, incorrect types, or type mismatches.';
-              proposedFix = `**Proposed Fix:**\n1. Review the Pyright output for specific type errors\n2. Add missing type hints\n3. Fix type mismatches\n4. Run \`pyright\` locally to verify`;
-            } else if (stepName.includes('Pytest')) {
-              hypothesis = '**Hypothesis:** Tests are failing. This could be due to broken functionality, changed interfaces, or test environment issues.';
-              proposedFix = `**Proposed Fix:**\n1. Run tests locally: \`pytest\`\n2. Review test failures\n3. Fix the underlying issues\n4. Ensure all tests pass before pushing`;
-            } else {
-              hypothesis = '**Hypothesis:** Unknown failure. Review the logs below for details.';
-              proposedFix = `**Proposed Fix:**\n1. Review the full workflow logs\n2. Reproduce the issue locally\n3. Fix the underlying problem`;
-            }
-
-            analysis += hypothesis + '\n\n';
-            analysis += proposedFix + '\n\n';
-            analysis += `### 📋 Full Logs\n\n`;
-            analysis += `View the complete logs in the [workflow run](${context.payload.repository.html_url}/actions/runs/${workflowRunId}).\n`;
-
-            // Post comment to PR
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: analysis,
-            });
-
-            console.log(`Posted failure analysis to PR #${prNumber}`);
+  # PR Review Agent - Currently disabled
+  # To enable: uncomment the job below and ensure OPENAI_API_KEY secret is configured
+  # The agent analyzes CI failures using AI and posts helpful comments to PRs
+  # See .github/workflows/pr-review-agent.yml for the full implementation
+  #
+  # pr-review-agent:
+  #   if: always() && github.event_name == 'pull_request' && (needs.python-checks.result == 'failure' || needs.paper-build.result == 'failure')
+  #   needs: [python-checks, paper-build]
+  #   uses: ./.github/workflows/pr-review-agent.yml
+  #   with:
+  #     python_checks_result: ${{ needs.python-checks.result }}
+  #     paper_build_result: ${{ needs.paper-build.result }}
+  #     workflow_run_id: ${{ github.run_id }}
+  #     pr_number: ${{ github.event.pull_request.number }}
+  #   secrets: inherit
