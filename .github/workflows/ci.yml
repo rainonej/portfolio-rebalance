@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  # paper-build job needs write to commit PDF updates
 
 jobs:
   python-checks:
@@ -39,6 +40,8 @@ jobs:
 
   paper-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +54,12 @@ jobs:
         with:
           filters: |
             paper:
-              - 'paper/**'
+              - 'paper/**/*.tex'
+              - 'paper/**/*.bib'
+              - 'paper/**/*.cls'
+              - 'paper/**/*.sty'
+              - 'paper/**/*.bst'
+              - 'paper/README.md'
 
       - name: Build paper
         if: steps.filter.outputs.paper == 'true'
@@ -59,6 +67,21 @@ jobs:
         with:
           root_file: main.tex
           working_directory: paper
+
+      - name: Commit PDF if changed
+        if: steps.filter.outputs.paper == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # Check if PDF has changed compared to HEAD
+          if ! git diff --exit-code HEAD -- paper/main.pdf > /dev/null 2>&1; then
+            echo "PDF has changed, committing update to current branch"
+            git add paper/main.pdf
+            git commit -m "chore: update paper PDF [skip ci]"
+            git push
+          else
+            echo "PDF unchanged, skipping commit"
+          fi
 
       - name: Prepare Pages artifact
         if: steps.filter.outputs.paper == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
