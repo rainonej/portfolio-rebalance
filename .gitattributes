@@ -1,0 +1,9 @@
+# Git LFS tracking for large data files
+# Track parquet data files with Git LFS
+*.parquet filter=lfs diff=lfs merge=lfs -text
+
+# Track large CSV files if any
+*.csv filter=lfs diff=lfs merge=lfs -text
+
+# But don't track cache files (they're in .gitignore anyway)
+artifacts/data/cache/** -filter -diff -merge
